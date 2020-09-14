@@ -35,7 +35,7 @@ class Window:
             raise ValueError('cannot login')
         # verify Email
         elif self.driver.current_url.startswith('https://twitter.com/account/login_challenge'):
-            hint = selt.driver.find_element_by_tag_name('strong').text
+            hint = self.driver.find_element_by_tag_name('strong').text
             email = input(f'verify Email (hint {hint}): ')
             self.driver.find_element_by_id('challenge_response').send_keys(email)
             self.driver.find_element_by_id('email_challenge_submit').click()
@@ -301,6 +301,8 @@ def get_tweet_by_hashtag(hashtag, filename='tweet.json', max_scroll=50, append=T
 
     # write to file
     write_to_json(filename, tweet_list, append)
+    
+###################################################################################
 
 def make_url(query=None, lang=None, **params):
     """
