@@ -8,7 +8,7 @@ import re, json, os, sys, glob, datetime, random, tqdm, time
 ##############################################################################
 
 class Window:
-    def __init__(self, username=None, password=None, headless=False):
+    def __init__(self, username=None, password=None, email=None, headless=False):
         options = Options()
         if headless:
             options.add_argument('--headless')
@@ -16,11 +16,11 @@ class Window:
             options.add_argument('--disable-dev-shm-usage')
         self.driver = webdriver.Chrome(options=options)
         if username and password:
-            self.twitter_login(username, password)
+            self.twitter_login(username, password, email)
         self.scrollheight_list = []
         self.scroll_end = False
         
-    def twitter_login(self, username, password):
+    def twitter_login(self, username, password, email):
         self.driver.get('https://twitter.com/login')
         time.sleep(1)
         # input username
@@ -36,10 +36,19 @@ class Window:
         # verify Email
         elif self.driver.current_url.startswith('https://twitter.com/account/login_challenge'):
             hint = self.driver.find_element_by_tag_name('strong').text
-            email = input(f'verify Email (hint {hint}): ')
             self.driver.find_element_by_id('challenge_response').send_keys(email)
             self.driver.find_element_by_id('email_challenge_submit').click()
             time.sleep(1)
+            # email missmatch -> input form
+            if self.driver.current_url.startswith('https://twitter.com/account/login_challenge'):
+                email = input(f'verify Email (hint {hint}): ')
+                self.driver.find_element_by_id('challenge_response').send_keys(email)
+                self.driver.find_element_by_id('email_challenge_submit').click()
+                time.sleep(1)
+                # missmatch 2 times -> raise error
+                if self.driver.current_url.startswith('https://twitter.com/account/login_challenge'):
+                    self.driver.close()
+                    raise ValueError('cannot login, Email is not correct')
     
     def get_page(self, url):
         self.driver.get(url)
