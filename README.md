@@ -50,3 +50,6 @@ twitter_url = make_url(
   
 window = Window(twitter_url) 
 ~~~
+
+![window](https://user-images.githubusercontent.com/44984892/93103732-2fe28f80-f6d7-11ea-928d-5af70aab0630.png)
+
