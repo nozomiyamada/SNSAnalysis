@@ -1,25 +1,45 @@
-from time import sleep
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.action_chains import ActionChains
 from bs4 import BeautifulSoup
 import pandas as pd
-import re, json, os, sys, glob, requests, datetime, random, tqdm, random
+import re, json, os, sys, glob, datetime, random, tqdm, time
 
 ##############################################################################
 
 class Window:
-    def __init__(self, url=''):
+    def __init__(self, username=None, password=None, headless=False):
         options = Options()
-        options.add_argument('--headless')
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-dev-shm-usage')
-        self.driver = webdriver.Chrome()
-        if url != '':
-            self.driver.get(url)
-            sleep(5)
+        if headless:
+            options.add_argument('--headless')
+            options.add_argument('--no-sandbox')
+            options.add_argument('--disable-dev-shm-usage')
+        self.driver = webdriver.Chrome(options=options)
+        if username and password:
+            self.twitter_login(username, password)
         self.scrollheight_list = []
         self.scroll_end = False
+        
+    def twitter_login(self, username, password):
+        self.driver.get('https://twitter.com/login')
+        time.sleep(1)
+        # input username
+        self.driver.find_element_by_name('session[username_or_email]').send_keys(username)
+        # input password
+        self.driver.find_element_by_name('session[password]').send_keys(password)
+        # click login button
+        self.driver.find_element_by_css_selector('form > div > div:nth-child(8) > div').click()
+        time.sleep(1)
+        if self.driver.current_url.startswith('https://twitter.com/login/error'):
+            self.driver.close()
+            raise ValueError('cannot login')
+        # verify Email
+        elif self.driver.current_url.startswith('https://twitter.com/account/login_challenge'):
+            hint = selt.driver.find_element_by_tag_name('strong').text
+            email = input(f'verify Email (hint {hint}): ')
+            self.driver.find_element_by_id('challenge_response').send_keys(email)
+            self.driver.find_element_by_id('email_challenge_submit').click()
+            time.sleep(1)
     
     def get_page(self, url):
         self.driver.get(url)
