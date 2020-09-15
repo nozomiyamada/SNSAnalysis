@@ -103,3 +103,37 @@ returns **list of BeautifulSoupObject of each tweet** for the next process (you 
 - - -
 
 ## _class_ `TweetContent(content)`
+
+class for processing each tweet. You don't have to use methods of this class except for `.get_data()`
+
+### -`.get_data()`
+
+returns content of tweet as dictionary. If the content is invalid, returns `None` instead.
+
+~~~python3
+from ScrapeTweet import make_url, Window, TweetContent
+
+twitter_url = make_url(
+  query='#ไม่นก',
+  lang='th',
+  until='2014-12-31',
+)
+
+window.get_page(twitter_url) # get page
+one_content_bs = window.get_contents()[0] # get the first content as BeautifulSoup
+content = TweetContent(one_content_bs) # instantiation
+content.get_data() # get dictionary
+
+
+>>>{'date': '2013-06-28T16:28:13',
+ 'displayname': 'หมีไม่ใช่หมี',
+ 'username': 'Meisnotmeeh',
+ 'reply_to': None,
+ 'tweet': 'ดีใจจัง... ที่พี่ทักฉันบ้าง อุอิ อุอิ #ไม่นก',
+ 'hashtag': ['#ไม่นก'],
+ 'language': 'th',
+ 'reply': '0',
+ 'retweet': '0',
+ 'like': '0',
+ 'url': 'https://twitter.com/tweet/status/350651860698415105'}
+~~~
