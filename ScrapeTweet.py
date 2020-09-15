@@ -9,16 +9,25 @@ import re, json, os, sys, glob, datetime, random, tqdm, time
 
 class Window:
     def __init__(self, username=None, password=None, email=None, headless=False):
+        
+        # headless or not
         options = Options()
         if headless:
             options.add_argument('--headless')
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')
         self.driver = webdriver.Chrome(options=options)
-        if username and password:
+        
+        # initialize
+        self.url = None; self.html = None; self.soup = None
+        
+        # login
+        if username and password and email:
             self.twitter_login(username, password, email)
-        self.scrollheight_list = []
+        
+        # flag to check whether the window can scroll more
         self.scroll_end = False
+        
         
     def twitter_login(self, username, password, email):
         self.driver.get('https://twitter.com/login')
@@ -33,29 +42,32 @@ class Window:
         if self.driver.current_url.startswith('https://twitter.com/login/error'):
             self.driver.close()
             raise ValueError('cannot login')
-        # verify Email
+        # verify Email (if any)
         elif self.driver.current_url.startswith('https://twitter.com/account/login_challenge'):
             hint = self.driver.find_element_by_tag_name('strong').text
             self.driver.find_element_by_id('challenge_response').send_keys(email)
             self.driver.find_element_by_id('email_challenge_submit').click()
             time.sleep(1)
-            # email missmatch -> input form
+            # email missmatch -> show input form
             if self.driver.current_url.startswith('https://twitter.com/account/login_challenge'):
                 email = input(f'verify Email (hint {hint}): ')
                 self.driver.find_element_by_id('challenge_response').send_keys(email)
                 self.driver.find_element_by_id('email_challenge_submit').click()
                 time.sleep(1)
-                # missmatch 2 times -> raise error
+                # missmatch twice -> raise error
                 if self.driver.current_url.startswith('https://twitter.com/account/login_challenge'):
                     self.driver.close()
                     raise ValueError('cannot login, Email is not correct')
+        
     
     def get_page(self, url):
         self.driver.get(url)
-        self.url = url
-        sleep(5)
+        time.sleep(3)
+        self.url = self.driver.current_url
         self.html = self.driver.page_source.encode('utf8')
         self.soup = BeautifulSoup(self.html, 'html.parser')
+        # set final tweet in the current window
+        self.final_element = self.get_final_element()
 
     def get_contents(self):
         """
@@ -70,25 +82,22 @@ class Window:
         self.soup = BeautifulSoup(self.html, 'html.parser')
         return self.soup.find_all('article')
 
+    def get_final_element(self):
+        return self.driver.find_elements_by_tag_name('article')[-1]
+    
     def scroll(self):
-        while True:
-            try:
-                element = self.driver.find_elements_by_tag_name('article')[-1]
-                actions = ActionChains(self.driver)
-                actions.move_to_element(element)
-                actions.perform()
-                sleep(1)
-                break
-            except:
-                pass
-        self.html = self.driver.page_source.encode('utf8')
-        self.soup = BeautifulSoup(self.html, 'html.parser')
-        self.scrollheight_list.append(self.driver.execute_script("return document.body.scrollHeight;"))
-        if len(self.scrollheight_list) >= 6:
-            if len(set(self.scrollheight_list[-6:])) == 1: # if cannot scroll more
-                self.scroll_end = True
-            else:
-                self.scrollheight_list = self.scrollheight_list[-6:] 
+        if self.scroll_end: # if cannot scroll more, end
+            print('cannot scroll more')
+            return
+        actions = ActionChains(self.driver)
+        actions.move_to_element(self.final_element)
+        actions.perform()
+        time.sleep(1)
+        new_final_element = self.get_final_element()
+        if new_final_element != self.final_element:
+            self.final_element = new_final_element
+        else:
+            self.scroll_end = True
 
     def close(self):
         self.driver.close() 
