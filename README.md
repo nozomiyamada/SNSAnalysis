@@ -37,6 +37,53 @@ make_url(
   
 >>>'https://twitter.com/search?f=live&q=%23สลิ่ม%20lang:th%20until:2020-8-16_20:00:00_ICT%20geocode:13.756567,100.5002908,0.5km'
 ~~~
+- - -
+
+## - `get_random_tweet_one_day(filename='randomtweet.json', lang='th', append=True, year=2020, month=4, day=1, headless=False, scroll_time=5, point_in_hour=2)`
+
+scrape tweets in the specified day at random without keyword/hashtag. Output is JSON file that is a list of dictionaries. The program will sample two time points in one hour (e.g. 13, 52) and the window will scroll 5 times in default (about 1800 tweets per day). You can change `scroll_time` and `point_in_hour`. 
+
+|keyword argument|description|
+|:-:|:-:|
+|`filename`|name of JSON file, default is `randomtweet.json`|
+|`lang`|language, e.g. `th`,`en`,`ja`|
+|`append`|if `True` and `filename` already exists, append to the file|
+|`year`, `month`, `day`|the target date|
+|`headless`|if `True`, browser is hidden. You must turn `True` when you use in Google Colab|
+|`scroll_time`|how many times scroll the window. scroll_time<=50 is recommended because of reaching request limits|
+|`point_in_hour`|the number of sampling point in one hour|
+
+~~~python3
+from ScrapeTweet import get_random_tweet_one_day
+
+get_random_tweet_one_day(
+  filename='20200816.json',
+  lang='th',
+  year=2020,
+  month=8,
+  day=16,
+  scroll_time=10,
+  point_in_hour=3
+)
+~~~
+
+The program will open browser and scroll automatically. In this case (`scroll_time=10`, `point_in_hours=3`), it takes about 20 minutes to complete.
+
+## - `get_tweet_by_query(query, filename='tweets.json', scroll_time=50, iter_time=10, headless=False)`
+
+scrape tweets that contain specified keyword/hashtag by going back to the past. Output is JSON file that is a list of dictionaries. If `filename` already exists, the program will start from the oldest date in the file. `iter_time` is how many times the window open/close. In short, scroll_time * iter_time is the total number of window scroll. 
+
+~~~python3
+from ScrapeTweet import get_tweet_by_query
+
+get_tweet_by_query(
+  query='#สลิ่ม',
+  scroll_time=50,
+  iter_time=10
+)
+~~~
+
+The program will finish after 10 times iterations.
 
 - - -
 
@@ -55,7 +102,7 @@ window = Window(
 ) 
 ~~~
 
-### - `.get_page(url)`
+### - `.get_page(url:str)`
 
 get a page of `url` and get its content (html, BeautifulSoupObject) 
 
@@ -102,9 +149,9 @@ returns **list of BeautifulSoupObject of each tweet** for the next process (you 
 
 - - -
 
-## _class_ `TweetContent(content)`
+## _class_ `TweetContent(content:bs4.element)`
 
-class for processing each tweet. You don't have to use methods of this class except for `.get_data()`
+class for processing each tweet. You don't have to use methods of this class by yourself.
 
 ### -`.get_data()`
 
@@ -113,27 +160,36 @@ returns content of tweet as dictionary. If the content is invalid, returns `None
 ~~~python3
 from ScrapeTweet import make_url, Window, TweetContent
 
+# make request URL
 twitter_url = make_url(
   query='#ไม่นก',
-  lang='th',
-  until='2014-12-31',
+  until='2015-12-31',
 )
 
-window.get_page(twitter_url) # get page
-one_content_bs = window.get_contents()[0] # get the first content as BeautifulSoup
-content = TweetContent(one_content_bs) # instantiation
-content.get_data() # get dictionary
+# make window instance without login
+window = Window()
 
+# get page
+window.get_page(twitter_url)
 
->>>{'date': '2013-06-28T16:28:13',
- 'displayname': 'หมีไม่ใช่หมี',
- 'username': 'Meisnotmeeh',
- 'reply_to': None,
- 'tweet': 'ดีใจจัง... ที่พี่ทักฉันบ้าง อุอิ อุอิ #ไม่นก',
+# get the third content as BeautifulSoup
+one_content_bs = window.get_contents()[2] 
+
+# instantiation
+content = TweetContent(one_content_bs) 
+
+# get dictionary
+content.get_data() 
+
+>>>{'date': '2015-09-28T15:16:26',
+ 'displayname': 'ソーラービーム',
+ 'username': 'bheamrapee',
+ 'reply_to': '@bhury',
+ 'tweet': '#ไม่นก',
  'hashtag': ['#ไม่นก'],
- 'language': 'th',
+ 'language': 'und',
  'reply': '0',
  'retweet': '0',
  'like': '0',
- 'url': 'https://twitter.com/tweet/status/350651860698415105'}
+ 'url': 'https://twitter.com/tweet/status/648516624618655744'}
 ~~~

@@ -66,8 +66,19 @@ class Window:
         self.url = self.driver.current_url
         self.html = self.driver.page_source.encode('utf8')
         self.soup = BeautifulSoup(self.html, 'html.parser')
-        # set final tweet in the current window
-        self.final_element = self.get_final_element()
+        for _ in range(10):
+            try:
+                # set final tweet in the current window
+                self.final_element = self.get_final_element()
+                return
+            except:
+                if 'No results for' in str(self.html):
+                    print('NO RESULTS')
+                    self.driver.close()
+                    return
+                time.sleep(3) # wait and try again
+        raise ConnectionError('check your internet connection status')
+                
 
     def get_contents(self):
         """
@@ -87,17 +98,21 @@ class Window:
     
     def scroll(self):
         if self.scroll_end: # if cannot scroll more, end
-            print('cannot scroll more')
             return
-        actions = ActionChains(self.driver)
-        actions.move_to_element(self.final_element)
-        actions.perform()
-        time.sleep(1)
-        new_final_element = self.get_final_element()
-        if new_final_element != self.final_element:
-            self.final_element = new_final_element
-        else:
-            self.scroll_end = True
+        for _ in range(5): # try 5 times
+            try:
+                actions = ActionChains(self.driver)
+                actions.move_to_element(self.final_element)
+                actions.perform()
+                time.sleep(1)
+                new_final_element = self.get_final_element()
+                if new_final_element != self.final_element: # if get new one
+                    self.final_element = new_final_element
+                    return # scroll and finish
+            except:
+                pass
+        # try 5 times but not change = no more result
+        self.scroll_end = True
 
     def close(self):
         self.driver.close() 
@@ -109,35 +124,41 @@ class TweetContent:
     get each tweet from bs4 object
     """
     def __init__(self, content):
-        self.content = content # one element of contents          
+        # one element of contents
+        # content must be BeautifulSoupObject
+        self.content = content      
         """
         @2020/8/27 one block is in "1-1-1-2-2-2th div" of content
-        <article>
-            <div>
-                <div>
-                    <div>
-                        <div>...</div>
-                        <div>
-                            <div>...</div>
-                            <div>
-                                <div>...</div>
-                                <div>
-                                    --- BLOCK IS HERE ---
-                                    <div> reply to (if any) </div>
-                                    <div> tweet content </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </article>
         it may change in the future
+        class names are unavailable, because they are changed frequently
+        <article>
+          <div> # 1
+            <div> # 1-1
+              <div> # 1-1-1
+                <div>...</div>
+                <div> # 1-1-1-2
+                  <div>...</div>
+                  <div> # 1-1-1-2-2
+                    <div>...</div>
+                    <div> # 1-1-1-2-2-2
+                        --- BLOCK IS HERE ---
+                        <div> reply to (if any) </div>
+                        <div> tweet content </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
         """
-        self.block = self.content.div.div.div\
-        .find_all('div',recursive=False)[1]\
-        .find_all('div',recursive=False)[1]\
-        .find_all('div',recursive=False)[1]
+        try:
+            self.block = self.content.div.div.div\
+            .find_all('div',recursive=False)[1]\
+            .find_all('div',recursive=False)[1]\
+            .find_all('div',recursive=False)[1]
+        except:
+            pass
         
     def get_tweet_block(self):
         # if no reply, tweet is in 1-1-1-2-2-2 (-1th) div
@@ -145,56 +166,58 @@ class TweetContent:
         """
         --- REPLY BLOCK = divs[0] ---
         <div class="...">
-            <div class="..." dir="auto">
-                Replying to 
-                <div class="...">
-                    <a class="..." data-focusable="true" href="/pertetaeyongx" role="link">
-                    <span class="...">
-                        @pertetaeyongx
-                    </span>
-                    </a>
-                </div>
+          <div class="..." dir="auto">
+            Replying to 
+            <div class="...">
+              <a class="..." data-focusable="true" href="/pertetaeyongx" role="link">
+                <span class="...">
+                  @pertetaeyongx
+                </span>
+              </a>
             </div>
+          </div>
         </div>
 
         --- TWEET BLOCK = divs[1] ---
         <div class="...">
-            <div class="..." dir="auto" lang="th">
-                <span class="...">
-                    โห ถามแบบนี้ลลไม่รู้จะตอบยังไงเลยเพราะดูแล้วเขาน่าจะไม่ออก555555
-                </span>
-            </div>
+          <div class="..." dir="auto" lang="th">
+            <span class="...">
+              โห ถามแบบนี้ลลไม่รู้จะตอบยังไงเลยเพราะดูแล้วเขาน่าจะไม่ออก555555
+            </span>
+          </div>
         </div>
         
         divs[-1] = retweet, reply, like
         """
-        divs = self.block.find_all('div',recursive=False)
+        divs = self.block.find_all('div', recursive=False)
         if divs[0].text.startswith('Replying to'):
             self.reply_to = divs[0].text.split('Replying to')[-1].strip() # string
-            self.tweet_block = divs[1] # bs4 object
+            self.tweet_block = divs[1] # bs4 object, continue to process in the next function
         else:
             self.reply_to = None
             self.tweet_block = divs[0]
 
     def get_tweet(self):
         """
+        tweet_block contains both <span> and <a>
+        ignore <img>
         --- self.tweet_block ---
         <div class="css-1dbjc4n">
-            <div class="..." dir="auto" lang="th">
-                <span class="...">
-                    แน่นอน
-                </span>
-                <a href="...">
-                    ...
-                </a>
-            </div>
+          <div class="..." dir="auto" lang="th">
+            <span class="...">
+              แน่นอน
+            </span>
+            <a href="...">
+              ...
+            </a>
+          </div>
         </div>
         """
         self.lang = self.tweet_block.div.get('lang')
         tweet = ''
         for segment in self.tweet_block.div.find_all(['span','a'],recursive=False):
             if segment.name == 'a':
-                url = re.search(r'title="(.+?)"', str(segment)).group(1)
+                url = re.search(r'title="(.+?)"', str(segment)).group(1) # extract full URL
                 tweet += url
             elif segment.text == '':
                 # if img alt is one character = emoji 
@@ -204,6 +227,7 @@ class TweetContent:
                     tweet += emoji.group(1)
             else:
                 tweet += segment.text # normal text
+        tweet = tweet.replace('\u200b', '')
         self.tweet = tweet
         
     def get_hashtags(self):
@@ -221,7 +245,7 @@ class TweetContent:
         self.username = self.content.find_all("a")[1].get('href')[1:]
         self.tweetid = self.content.find_all('a')[2].get('href').split('/')[-1]
     
-    def return_dic(self):
+    def get_data(self):
         self.get_tweet_block()
         self.get_tweet()
         self.get_hashtags()
@@ -235,27 +259,96 @@ class TweetContent:
             'tweet':self.tweet.strip(),
             'hashtag':self.hashtags,
             'language':self.lang,
-            'reply':convert_int(self.reply),
-            'retweet':convert_int(self.retweet),
-            'like':convert_int(self.like),
+            'reply':self.reply,
+            'retweet':self.retweet,
+            'like':self.like,
             'url':f'https://twitter.com/tweet/status/{self.tweetid}',
         }
         return dic
 
 ###################################################################################
 
+def get_random_tweet_one_day(filename='randomtweet.json', append=True, lang='th', year=2020, month=4, day=1, headless=False, scroll_time=5, point_in_hour=2):
+    if append and os.path.exists(filename):
+        answer = input(f'do you append to "{filename}"? [y/n]: ')
+        if answer != 'y':
+            return
+    elif append == False and os.path.exists(filename):
+        answer = input(f'do you overwrite "{filename}"? [y/n]: ')
+        if answer != 'y':
+            os.remove(filename)
+            return
+        
+    # iterate each hour
+    for h in tqdm.tqdm(range(24)):
+        window = Window(headless=headless) # make new window in oreder to refresh browser & IP address
+        tweet_list = [] # list for storing tweet dict
+        for j in range(point_in_hour): # every 60//point minutes
+            # minute : selected randomly e.g. 0+14, 30+22, if point_in_hour == 2
+            minute = j*(60//point_in_hour) + random.randint(0, 60//point_in_hour-1) 
+            url = f'https://twitter.com/search?f=live&q=lang%3A{lang}%20until%3A{year}-{month}-{day}_{h}:{minute}:00_UTC'       
+            window.get_page(url)
+            for _ in range(scroll_time): # scroll
+                contents = window.get_contents()
+                tweet_list += get_tweets(contents)
+                tweet_list = drop_duplicate(tweet_list)
+                window.scroll()
+        window.close()
+
+        # write to file
+        write_to_json(filename, tweet_list, append=True)
+
+        
+def get_tweet_by_query(query, filename='tweets.json', scroll_time=50, iter_time=10, headless=False):
+    """
+    scrape tweets by query or hashtag \n
+    if choose existing filename, you can continue to scrape from the oldest date \n
+    
+    :scroll_time: how many times does the window scroll. scroll_time<=50 is recommended because of request limits \n
+    :iter_time: how many times does the window open/close. In short, scroll_time * iter_time is the total number of scroll \n
+    :headless: whether use headless mode or not. it must be True when run program in Google Colab
+    """
+    
+    # replace hashtag #
+    if query.startswith('#'):
+        query = query.replace('#', '%23')
+            
+    # check existing file
+    if os.path.exists(filename):
+        answer = input(f'continue from the oldest date of "{filename}"? [y/n]: ')
+        if answer != 'y':
+            return
+        
+    # iterate "max_iter"
+    for h in tqdm.tqdm(range(iter_time)):
+        window = Window(headless=headless) # open/reopen window
+        tweet_list = [] # list for storing tweet dict
+        until = get_oldest_date(filename) # 2020-03-31_17:02:58
+        url = f'https://twitter.com/search?f=live&q={query}%20until%3A{until}_ICT'
+        window.get_page(url)
+        for _ in range(scroll_time): # scroll
+            contents = window.get_contents()
+            tweet_list += get_tweets(contents)
+            tweet_list = drop_duplicate(tweet_list, reverse=True) # descending sort by URL
+            window.scroll()
+        window.close()
+
+        # write to file & 
+        write_to_json(filename, tweet_list, append=True)
+
+    
 def get_tweets(contents):
     """
     make list of dictionaries from contents list (list of bs4 objects)
+    contents is a list of bs4 object, which Window.get_contents() gives
 
     """
     return_list = []
     for content in contents:
         try:
             inst = TweetContent(content)
-            return_list.append(inst.return_dic())
-        except Exception as e: # advetisement, hidden content
-            #print(type(e), e)
+            return_list.append(inst.get_data())
+        except: # advetisement or hidden content
             pass
     return return_list
 
@@ -275,51 +368,16 @@ def write_to_json(filename:str, tweet_list:list, append=True):
         data = tweet_list
     with open(filename, 'w', encoding='utf8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-
-
-def get_random_each_hour(filename='randomtweet.json', append=True, lang='ja', year=2020, month=4, day=1, hour=0, timezone='UTC', repeat=20):
-    # iterate each hour
-    for h in range(hour, 24):
-        tweet_list = [] # list for storing tweets (dict)
-        r = random.randint(2,59)
-        url = f'https://twitter.com/search?f=live&q=lang%3A{lang}%20since%3A{year}-{month}-{day}_{h}:00:00_{timezone}%20until%3A{year}-{month}-{day}_{h}:{r}:00_{timezone}'        
-        window = Window(url)
-
-        for _ in range(repeat):
-            # get tweets from html
-            contents = window.get_contents()
-            new_tweets = get_tweets(contents)
-            tweet_list += new_tweets
-            tweet_list = drop_duplicate(tweet_list)
-
-            # scroll
-            window.scroll()
-        window.close()
-
-        # write to file
-        write_to_json(filename, tweet_list, append)
-
-def get_tweet_by_hashtag(hashtag, filename='tweet.json', max_scroll=50, append=True, **params):
-    url = make_url(hashtag, **params)
-    #url = f'https://twitter.com/search?f=live&q=%23{hashtag}%20lang%3Ath%20since%3A{since}_0:00:00_{timezone}%20until%3A{until}_23:59:59_{timezone}'
-    tweet_list = [] # list for storing tweets (dict)
-    window = Window(url)
-    for _ in range(max_scroll):
-        # get tweets from html
-        contents = window.get_contents()
-        new_tweets = get_tweets(contents)
-        tweet_list += new_tweets
-        tweet_list = drop_duplicate(tweet_list, reverse=True)
-
-        # scroll
-        window.scroll()
-        if window.scroll_end:
-            break
-    window.close()
-
-    # write to file
-    write_to_json(filename, tweet_list, append)
     
+def get_oldest_date(filename):
+    if os.path.exists(filename):
+        df = pd.read_json(filename)
+        df = df.sort_values('url').iloc[0]
+        return df['date'].strftime('%Y-%m-%d_%H:%M:%S') # 2020-03-31_17:02:58
+    else:
+        until = datetime.datetime.now()
+        return until.strftime('%Y-%m-%d_%H:%M:%S')
+
 ###################################################################################
 
 def make_url(query=None, lang=None, **params):
@@ -347,7 +405,7 @@ def make_url(query=None, lang=None, **params):
     if lang:
         if lang in ["en", "ar", "bn", "cs", "da", "de", "el", "es",
                     "fa", "fi", "fil", "fr", "he", "hi", "hu", "id",
-                    "it", "ja", "ko", "msa", "nl", "no", "pl", "pt",
+                    "it", "ja", "ko", "msa", "nl", "no", "pl", "pt", "und",
                     "ro", "ru", "sv", "th", "tr", "uk", "ur", "vi", "zh-cn", "zh-tw"]:
             url += f"lang:{lang}%20"
         else:
