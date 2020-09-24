@@ -372,7 +372,7 @@ def write_to_json(filename:str, tweet_list:list, append=True):
 def get_oldest_date(filename):
     if os.path.exists(filename):
         df = pd.read_json(filename)
-        df = df.sort_values('url').iloc[0]
+        df = df.iloc[len(df)-1]
         return df['date'].strftime('%Y-%m-%d_%H:%M:%S') # 2020-03-31_17:02:58
     else:
         until = datetime.datetime.now()
