@@ -354,7 +354,7 @@ def get_tweets(contents):
 
 def drop_duplicate(lst_of_dict, reverse=False):
     newlist = []
-    urllist = [x['url'] for x in lst_of_dict]
+    urllist = set([x['url'] for x in lst_of_dict])
     for dic in lst_of_dict:
         if dic['url'] not in urllist:
             newlist.append(dic)
