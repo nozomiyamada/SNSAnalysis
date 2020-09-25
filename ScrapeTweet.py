@@ -358,7 +358,10 @@ def drop_duplicate(lst_of_dict, reverse=False):
     for dic in lst_of_dict:
         if dic['url'] not in urllist:
             newlist.append(dic)
-    return newlist
+    if reverse:
+        return newlist[::-1]
+    else:
+        return newlist
 
 def write_to_json(filename:str, tweet_list:list, append=True):
     if append and os.path.exists(filename):
