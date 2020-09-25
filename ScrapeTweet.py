@@ -354,10 +354,11 @@ def get_tweets(contents):
 
 def drop_duplicate(lst_of_dict, reverse=False):
     newlist = []
+    urllist = [x['url'] for x in lst_of_dict]
     for dic in lst_of_dict:
-        if dic not in newlist:
+        if dic['url'] not in urllist:
             newlist.append(dic)
-    return sorted(newlist, key=lambda x:x['url'], reverse=reverse)
+    return newlist
 
 def write_to_json(filename:str, tweet_list:list, append=True):
     if append and os.path.exists(filename):
