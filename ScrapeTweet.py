@@ -329,7 +329,7 @@ def get_tweet_by_query(query, filename='tweets.json', scroll_time=50, iter_time=
         for _ in range(scroll_time): # scroll
             contents = window.get_contents()
             tweet_list += get_tweets(contents)
-            tweet_list = drop_duplicate(tweet_list, reverse=True) # descending sort by URL
+            tweet_list = drop_duplicate(tweet_list) # descending sort by URL
             window.scroll()
         window.close()
 
@@ -354,10 +354,11 @@ def get_tweets(contents):
 
 def drop_duplicate(lst_of_dict, reverse=False):
     newlist = []
-    urllist = set([x['url'] for x in lst_of_dict])
+    urllist = set()
     for dic in lst_of_dict:
         if dic['url'] not in urllist:
             newlist.append(dic)
+            urllist.add(dic['url'])
     if reverse:
         return newlist[::-1]
     else:
@@ -376,7 +377,7 @@ def write_to_json(filename:str, tweet_list:list, append=True):
 def get_oldest_date(filename):
     if os.path.exists(filename):
         df = pd.read_json(filename)
-        df = df.iat[len(df)-1]
+        df = df.iloc[len(df)-1]
         return df['date'].strftime('%Y-%m-%d_%H:%M:%S') # 2020-03-31_17:02:58
     else:
         until = datetime.datetime.now()
