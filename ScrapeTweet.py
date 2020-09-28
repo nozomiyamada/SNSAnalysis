@@ -299,7 +299,7 @@ def get_random_tweet_one_day(filename='randomtweet.json', append=True, lang='th'
         write_to_json(filename, tweet_list, append=True)
 
         
-def get_tweet_by_query(query, filename='tweets.json', scroll_time=50, iter_time=10, headless=False, oldest_date=None):
+def get_tweet_by_query(query, filename='tweets.json', scroll_time=50, iter_time=10, headless=False, until_date=None):
     """
     scrape tweets by query or hashtag \n
     if choose existing filename, you can continue to scrape from the oldest date \n
@@ -315,7 +315,7 @@ def get_tweet_by_query(query, filename='tweets.json', scroll_time=50, iter_time=
     query = re.sub(r'\s+', '%20', query.strip())
             
     # check existing file
-    if os.path.exists(filename) and oldest_date==None:
+    if os.path.exists(filename) and until_date==None:
         answer = input(f'continue from the oldest date of "{filename}"? [y/n]: ')
         if answer != 'y':
             return
@@ -324,10 +324,10 @@ def get_tweet_by_query(query, filename='tweets.json', scroll_time=50, iter_time=
     for h in tqdm.tqdm(range(iter_time)):
         window = Window(headless=headless) # open/reopen window
         tweet_list = [] # list for storing tweet dict
-        if oldest_date:
-            until = oldest_date
+        if until_date:
+            until = until_date
         else:
-            until = get_oldest_date(filename) # 2020-03-31_17:02:58
+            until = get_until_date(filename) # 2020-03-31_17:02:58
         url = f'https://twitter.com/search?f=live&q={query}%20until%3A{until}_ICT'
         window.get_page(url)
         for _ in range(scroll_time): # scroll
@@ -339,8 +339,8 @@ def get_tweet_by_query(query, filename='tweets.json', scroll_time=50, iter_time=
 
         # write to file & 
         write_to_json(filename, tweet_list, append=True)
-        if oldest_date:
-            oldest_date = tweet_list[-1]['date'].replace('T', '_')
+        if until_date:
+            until_date = tweet_list[-1]['date'].replace('T', '_')
 
     
 def get_tweets(contents):
@@ -380,7 +380,7 @@ def write_to_json(filename:str, tweet_list:list, append=True):
     with open(filename, 'w', encoding='utf8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     
-def get_oldest_date(filename):
+def get_until_date(filename):
     if os.path.exists(filename):
         df = pd.read_json(filename)
         df = df.iloc[len(df)-1]
