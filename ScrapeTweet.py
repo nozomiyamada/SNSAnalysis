@@ -312,6 +312,7 @@ def get_tweet_by_query(query, filename='tweets.json', scroll_time=50, iter_time=
     # replace hashtag #
     if query.startswith('#'):
         query = query.replace('#', '%23')
+    query = re.sub(r'\s+', '%20', query.strip())
             
     # check existing file
     if os.path.exists(filename) and oldest_date==None:
