@@ -66,7 +66,7 @@ class Window:
         self.url = self.driver.current_url
         self.html = self.driver.page_source.encode('utf8')
         self.soup = BeautifulSoup(self.html, 'html.parser')
-        for _ in range(10):
+        for _ in range(20):
             try:
                 # set final tweet in the current window
                 self.final_element = self.get_final_element()
@@ -76,7 +76,7 @@ class Window:
                     print('NO RESULTS')
                     self.driver.close()
                     return
-                time.sleep(3) # wait and try again
+                time.sleep(2) # wait and try again
         raise ConnectionError('check your internet connection status')
                 
 
