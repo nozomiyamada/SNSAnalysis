@@ -312,6 +312,8 @@ def get_tweet_by_query(query, filename='tweets.json', scroll_time=50, iter_time=
     # replace hashtag #
     if query.startswith('#'):
         query = query.replace('#', '%23')
+
+    # replace whitespace between queries
     query = re.sub(r'\s+', '%20', query.strip())
             
     # check existing file
@@ -324,6 +326,7 @@ def get_tweet_by_query(query, filename='tweets.json', scroll_time=50, iter_time=
     for h in tqdm.tqdm(range(iter_time)):
         window = Window(headless=headless) # open/reopen window
         tweet_list = [] # list for storing tweet dict
+        # if no until_date -> get the oldest date from the file
         if until_date:
             until = until_date
         else:
@@ -342,12 +345,54 @@ def get_tweet_by_query(query, filename='tweets.json', scroll_time=50, iter_time=
         if until_date:
             until_date = tweet_list[-1]['date'].replace('T', '_')
 
+def get_tweet_by_user(user, filename='tweet_user.json', scroll_time=50, iter_time=10, headless=False, until_date=None):
+    """
+    scrape tweets by username \n
+    if choose existing filename, you can continue to scrape from the oldest date \n
+    
+    :scroll_time: how many times does the window scroll. scroll_time<=50 is recommended because of request limits \n
+    :iter_time: how many times does the window open/close. In short, scroll_time * iter_time is the total number of scroll \n
+    :headless: whether use headless mode or not. it must be True when run program in Google Colab
+    """
+    
+    # add @
+    if not user.startswith('@'):
+        user = '@' + user
+            
+    # check existing file
+    if os.path.exists(filename) and until_date==None:
+        answer = input(f'continue from the oldest date of "{filename}"? [y/n]: ')
+        if answer != 'y':
+            return
+        
+    # iterate "max_iter"
+    for h in tqdm.tqdm(range(iter_time)):
+        window = Window(headless=headless) # open/reopen window
+        tweet_list = [] # list for storing tweet dict
+        # if no until_date -> get the oldest date from the file
+        if until_date:
+            until = until_date
+        else:
+            until = get_until_date(filename) # 2020-03-31_17:02:58
+        url = f'https://twitter.com/search?f=live&q=from%3A{user}%20until%3A{until}_ICT'
+        window.get_page(url)
+        for _ in range(scroll_time): # scroll
+            contents = window.get_contents()
+            tweet_list += get_tweets(contents)
+            tweet_list = drop_duplicate(tweet_list)
+            window.scroll()
+        window.close()
+
+        # write to file & 
+        write_to_json(filename, tweet_list, append=True)
+        if until_date:
+            until_date = tweet_list[-1]['date'].replace('T', '_')
+
     
 def get_tweets(contents):
     """
     make list of dictionaries from contents list (list of bs4 objects)
     contents is a list of bs4 object, which Window.get_contents() gives
-
     """
     return_list = []
     for content in contents:
@@ -402,7 +447,7 @@ def make_url(query=None, lang=None, **params):
     url = 'https://twitter.com/search?f=live&q='
     
     ### query OR language ###
-    if query == None and lang == None and 'from' not in params:
+    if query == None and lang == None and 'from_' not in params:
         raise ValueError('must specify at least one of (query=, lang=)')
         
     ### query ###
