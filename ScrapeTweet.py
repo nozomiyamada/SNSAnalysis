@@ -402,7 +402,7 @@ def make_url(query=None, lang=None, **params):
     url = 'https://twitter.com/search?f=live&q='
     
     ### query OR language ###
-    if query == None and lang == None:
+    if query == None and lang == None and 'from' not in params:
         raise ValueError('must specify at least one of (query=, lang=)')
         
     ### query ###
