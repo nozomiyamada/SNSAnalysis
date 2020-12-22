@@ -28,7 +28,6 @@ class Window:
         # flag to check whether the window can scroll more
         self.scroll_end = False
         
-        
     def twitter_login(self, username, password, email):
         self.driver.get('https://twitter.com/login')
         time.sleep(1)
@@ -323,7 +322,7 @@ def get_tweet_by_query(query, filename='tweets.json', scroll_time=50, iter_time=
             return
         
     # iterate "max_iter"
-    for h in tqdm.tqdm(range(iter_time)):
+    for _ in tqdm.tqdm(range(iter_time)):
         window = Window(headless=headless) # open/reopen window
         tweet_list = [] # list for storing tweet dict
         # if no until_date -> get the oldest date from the file
@@ -345,7 +344,7 @@ def get_tweet_by_query(query, filename='tweets.json', scroll_time=50, iter_time=
         if until_date:
             until_date = tweet_list[-1]['date'].replace('T', '_')
 
-def get_tweet_by_user(user, filename='tweet_user.json', scroll_time=50, iter_time=10, headless=False, until_date=None):
+def get_tweet_by_user(user, filename='tweet_user.json', scroll_time=50, iter_time=10, headless=False, until_date=None, append_newdata=False):
     """
     scrape tweets by username \n
     if choose existing filename, you can continue to scrape from the oldest date \n
@@ -353,26 +352,33 @@ def get_tweet_by_user(user, filename='tweet_user.json', scroll_time=50, iter_tim
     :scroll_time: how many times does the window scroll. scroll_time<=50 is recommended because of request limits \n
     :iter_time: how many times does the window open/close. In short, scroll_time * iter_time is the total number of scroll \n
     :headless: whether use headless mode or not. it must be True when run program in Google Colab
+    :until_date: the newest date you need (default: today)
+    :append_newdata: whether append new data (until today) into existing file or not. filename must be consistent 
     """
     
-    # add @
+    ### add @ ###
     if not user.startswith('@'):
         user = '@' + user
             
-    # check existing file
-    if os.path.exists(filename) and until_date==None:
+    ### check existing file ###
+    if append_newdata == True and os.path.exists(filename):
+        answer = input(f'append new data to "{filename}"? [y/n]: ')
+        if answer != 'y':
+            return
+    elif os.path.exists(filename) and until_date==None:
         answer = input(f'continue from the oldest date of "{filename}"? [y/n]: ')
         if answer != 'y':
             return
         
-    # iterate "max_iter"
-    for h in tqdm.tqdm(range(iter_time)):
+    ### iterate "max_iter" ###
+    for _ in tqdm.tqdm(range(iter_time)):
         window = Window(headless=headless) # open/reopen window
         tweet_list = [] # list for storing tweet dict
-        # if no until_date -> get the oldest date from the file
-        if until_date:
+        if append_newdata: # until today
+            until = str(datetime.datetime.today()).split('.')[0].replace(' ','_') # '2020-12-18 03:23:16.998132' -> '2020-12-18 03:23:16' -> '2020-12-18_03:23:16'
+        elif until_date:
             until = until_date
-        else:
+        else: # get the oldest date from the file
             until = get_until_date(filename) # 2020-03-31_17:02:58
         url = f'https://twitter.com/search?f=live&q=from%3A{user}%20until%3A{until}_ICT'
         window.get_page(url)
@@ -383,8 +389,8 @@ def get_tweet_by_user(user, filename='tweet_user.json', scroll_time=50, iter_tim
             window.scroll()
         window.close()
 
-        # write to file & 
-        write_to_json(filename, tweet_list, append=True)
+        ### write to file ###
+        write_to_json(filename, tweet_list, append=True, newdata=append_newdata)
         if until_date:
             until_date = tweet_list[-1]['date'].replace('T', '_')
 
@@ -415,11 +421,15 @@ def drop_duplicate(lst_of_dict, reverse=False):
     else:
         return newlist
 
-def write_to_json(filename:str, tweet_list:list, append=True):
-    if append and os.path.exists(filename):
+def write_to_json(filename:str, tweet_list:list, append=True, newdata=False):
+    if newdata and os.path.exists(filename):
         with open(filename) as f:
             data = json.load(f)
-            data += tweet_list
+            data = tweet_list + data # append before
+    elif append and os.path.exists(filename):
+        with open(filename) as f:
+            data = json.load(f)
+            data += tweet_list # append after
     else:
         data = tweet_list
     with open(filename, 'w', encoding='utf8') as f:
