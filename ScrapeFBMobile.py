@@ -148,15 +148,15 @@ class Window:
 	def get_reaction(self, soup):
 		footer = str(soup.find('footer'))
 		try:
-			like = re.search(r'(?:ถูกใจ |>)([\d,]+) (?:คน|Like)', footer).group(1)
+			like = re.search(r'(?:ถูกใจ |>)([\d,]+) (?:คน|[Ll]ike)', footer).group(1)
 		except:
 			like = '0'
 		try:
-			comment = re.search(r'(?:ความคิดเห็น |>)([\d,]+) (?:รายการ|comment)', footer).group(1)
+			comment = re.search(r'(?:ความคิดเห็น |>)([\d,]+) (?:รายการ|[Cc]omment)', footer).group(1)
 		except:
 			comment = '0'
 		try:
-			share = re.search(r'(?:แชร์ |>)([\d,]+) (?:ครั้ง|share)', footer).group(1)
+			share = re.search(r'(?:แชร์ |>)([\d,]+) (?:ครั้ง|[Ss]hare)', footer).group(1)
 		except:
 			share = '0'
 		return like, comment, share
