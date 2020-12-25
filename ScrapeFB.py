@@ -1,5 +1,4 @@
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.action_chains import ActionChains
 import re, json, os, sys, tqdm, time, html, traceback, bs4
 
@@ -44,12 +43,18 @@ class Window:
 
 	def __init__(self, url=None, headless=False, browser='chrome'):
 		### SELENIUM WEBDRIVER ###
-		options = Options()
+		
 		if headless: # headless or not (must True on google colab,)
-			options.add_argument('--headless')
-			options.add_argument('--no-sandbox')
-			options.add_argument('--disable-dev-shm-usage')
-			self.driver = webdriver.Chrome(options=options)
+			if browser.lower() == 'chrome':
+				options = webdriver.chrome.options.Options()
+				options.add_argument('--headless')
+				options.add_argument('--no-sandbox')
+				options.add_argument('--disable-dev-shm-usage')
+				self.driver = webdriver.Chrome(options=options)
+			elif browser.lower() == 'firefox':
+				options = webdriver.firefox.options.Options()
+				options.headless = True
+				self.driver = webdriver.Firefox(options=options)
 		elif browser.lower() == 'chrome':
 			self.driver = webdriver.Chrome()
 		elif browser.lower() == 'firefox':
@@ -87,16 +92,16 @@ class WindowNoLogin(Window):
 		self.driver.execute_script(script)
 
 	def scroll(self):
-		try: # close warning popup, if any
-			self.driver.execute_script("document.querySelector('._t').querySelector('.autofocus').click()")
-		except:
-			pass
-		try: # remove login popup, if any
-			self.driver.execute_script("document.querySelector('#dialog_0').remove();")
-		except:
-			pass
 		for _ in range(10): # try 10 times = 10 sec
 			self.final_element = self.get_final_element()
+			try: # close warning popup, if any
+				self.driver.execute_script("document.querySelector('._t').querySelector('.autofocus').click()")
+			except:
+				pass
+			try: # remove login popup, if any
+				self.driver.execute_script("document.querySelector('#dialog_0').remove();")
+			except:
+				pass
 			try:
 				# scroll to the bottom
 				self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
