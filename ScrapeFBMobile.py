@@ -148,22 +148,22 @@ class Window:
 	def get_reaction(self, soup):
 		footer = str(soup.find('footer'))
 		try:
-			like = re.search(r'(?:ถูกใจ )?(\d+) (?:คน|Like)', footer).group(1)
+			like = re.search(r'>(?:ถูกใจ |>)(\d+) (?:คน|Like)', footer).group(1)
 		except:
 			like = '0'
 		try:
-			comment = re.search(r'(?:ความคิดเห็น )?(\d+) (?:รายการ|comment)', footer).group(1)
+			comment = re.search(r'>(?:ความคิดเห็น |>)(\d+) (?:รายการ|comment)', footer).group(1)
 		except:
 			comment = '0'
 		try:
-			share = re.search(r'(?:แชร์ )?(\d+) (?:ครั้ง|share)', footer).group(1)
+			share = re.search(r'(?:แชร์ |>)(\d+) (?:ครั้ง|share)', footer).group(1)
 		except:
 			share = '0'
 		return like, comment, share
 
 	def get_one_post(self, selenium_elem):
 		postid, date = self.get_date_from_elem(selenium_elem)
-		soup = bs4.BeautifulSoup(selenium_elem.get_attribute('innerHTML'))
+		soup = bs4.BeautifulSoup(selenium_elem.get_attribute('innerHTML'), 'html.parser')
 		article, hashtags = self.get_article(soup)
 		images = self.get_images(soup)
 		video = self.get_video(soup)
