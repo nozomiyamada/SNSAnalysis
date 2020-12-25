@@ -59,7 +59,7 @@ class Window:
 		elif browser.lower() == 'chrome':
 			self.driver = webdriver.Chrome()
 		elif browser.lower() == 'firefox':
-			self.driver = webdriver.Firefox(proxy='socks5://127.0.0.1:9050')
+			self.driver = webdriver.Firefox()
 		elif browser.lower() == 'opera':
 			self.driver = webdriver.Opera()
 		elif browser.lower() == 'safari':
