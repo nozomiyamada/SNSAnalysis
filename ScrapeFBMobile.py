@@ -148,11 +148,11 @@ class Window:
 	def get_reaction(self, soup):
 		footer = str(soup.find('footer'))
 		try:
-			like = re.search(r'>(?:ถูกใจ |>)([\d,]+) (?:คน|Like)', footer).group(1)
+			like = re.search(r'(?:ถูกใจ |>)([\d,]+) (?:คน|Like)', footer).group(1)
 		except:
 			like = '0'
 		try:
-			comment = re.search(r'>(?:ความคิดเห็น |>)([\d,]+) (?:รายการ|comment)', footer).group(1)
+			comment = re.search(r'(?:ความคิดเห็น |>)([\d,]+) (?:รายการ|comment)', footer).group(1)
 		except:
 			comment = '0'
 		try:
