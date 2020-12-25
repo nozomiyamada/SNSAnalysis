@@ -53,7 +53,8 @@ class Window:
 				self.driver = webdriver.Chrome(options=options)
 			elif browser.lower() == 'firefox':
 				options = webdriver.firefox.options.Options()
-				options.headless = True
+				options.add_argument("--headless")
+				options.add_argument("start-maximized")
 				self.driver = webdriver.Firefox(options=options)
 		elif browser.lower() == 'chrome':
 			self.driver = webdriver.Chrome()
