@@ -121,8 +121,8 @@ class Window:
 							article += elem.text
 						except:
 							pass
-			article += '\n\n'
-			article = re.sub('\n +', '\n', article).strip()
+			article += '\n\n' # between paragraphs
+		article = re.sub('\n +', '\n', article).strip()
 		if hashtags == []:
 			hashtags = None
 		return article, hashtags
