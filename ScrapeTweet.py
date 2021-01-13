@@ -298,7 +298,7 @@ def get_random_tweet_one_day(filename='randomtweet.json', append=True, lang='th'
         write_to_json(filename, tweet_list, append=True)
 
         
-def get_tweet_by_query(query, filename='tweets.json', scroll_time=50, iter_time=10, headless=False, until_date=None):
+def get_tweet_by_query(query, filename='tweets.json', scroll_time=50, iter_time=10, headless=False, until_date=None, since_date=None):
     """
     scrape tweets by query or hashtag \n
     if choose existing filename, you can continue to scrape from the oldest date \n
@@ -331,6 +331,10 @@ def get_tweet_by_query(query, filename='tweets.json', scroll_time=50, iter_time=
         else:
             until = get_until_date(filename) # 2020-03-31_17:02:58
         url = f'https://twitter.com/search?f=live&q={query}%20until%3A{until}_ICT'
+        if since_date:
+            url += f'%20until%3A{since_date}'
+
+        # get twitter page
         window.get_page(url)
         for _ in range(scroll_time): # scroll
             contents = window.get_contents()
