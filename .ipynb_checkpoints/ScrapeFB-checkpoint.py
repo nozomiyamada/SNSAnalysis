@@ -226,7 +226,7 @@ class WindowNoLogin(Window):
 ##############################################################################
 
 class WindowLogin(Window):
-	def __init__(self, url=None, headless=False, browser='chrome', email=None, password=None):
+	def __init__(self, url=None, headless=False, browser='Firefox', email=None, password=None):
 		super().__init__(url, headless, browser)
 		### USERNAME & PASSWORD ###
 		self.email = email
@@ -294,7 +294,7 @@ class WindowLogin(Window):
 		time.sleep(sleeptime)
 		# get date from popover & create link by mouseover
 		link = date_elem.get_attribute('href').split('?')[0]
-		mousehover_elem = self.driver.find_element_by_css_selector('.j83agx80.cbu4d94t.l9j0dhe7.jgljxmt5.be9z9djy > div:nth-child(2)') # get date from div element located at bottom
+		mousehover_elem = self.driver.find_elements_by_css_selector('.__fb-light-mode')[-1] # get date modal
 		date = mousehover_elem.text.strip()
 		self.mouseover_element(post_elem) # mouseoff <a> again
 		return date, link
