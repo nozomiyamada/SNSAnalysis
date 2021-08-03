@@ -289,12 +289,15 @@ class WindowLogin(Window):
 
 	def get_date_from_elem(self, post_elem, sleeptime=1):
 		date_elem = post_elem.find_elements_by_css_selector('.qzhwtbm6.knvmm38d')[1].find_element_by_css_selector('a')
+		# remove unhidden old date modal
+		while len(self.driver.find_elements_by_css_selector('.__fb-light-mode')) > 0:
+			self.driver.execute_script('document.querySelector(".__fb-light-mode").remove();')
 		self.mouseover_element(post_elem) # mouseoff <a>
 		self.mouseover_element(date_elem) # mouseover <a>
 		time.sleep(sleeptime)
 		# get date from popover & create link by mouseover
 		link = date_elem.get_attribute('href').split('?')[0]
-		mousehover_elem = self.driver.find_elements_by_css_selector('.__fb-light-mode')[-1] # get date modal
+		mousehover_elem = 		self.driver.find_elements_by_css_selector('.__fb-light-mode')[-1] # get date modal
 		date = mousehover_elem.text.strip()
 		self.mouseover_element(post_elem) # mouseoff <a> again
 		return date, link

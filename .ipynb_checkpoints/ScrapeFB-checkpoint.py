@@ -289,12 +289,15 @@ class WindowLogin(Window):
 
 	def get_date_from_elem(self, post_elem, sleeptime=1):
 		date_elem = post_elem.find_elements_by_css_selector('.qzhwtbm6.knvmm38d')[1].find_element_by_css_selector('a')
+		# remove unhidden old date modal
+		while len(self.driver.find_elements_by_css_selector('.__fb-light-mode')) > 0:
+			self.driver.execute_script('document.querySelector(".__fb-light-mode").remove();')
 		self.mouseover_element(post_elem) # mouseoff <a>
 		self.mouseover_element(date_elem) # mouseover <a>
 		time.sleep(sleeptime)
 		# get date from popover & create link by mouseover
 		link = date_elem.get_attribute('href').split('?')[0]
-		mousehover_elem = self.driver.find_elements_by_css_selector('.__fb-light-mode')[-1] # get date modal
+		mousehover_elem = 		self.driver.find_elements_by_css_selector('.__fb-light-mode')[-1] # get date modal
 		date = mousehover_elem.text.strip()
 		self.mouseover_element(post_elem) # mouseoff <a> again
 		return date, link
@@ -322,19 +325,6 @@ class WindowLogin(Window):
 			else:
 				break
 
-
-		### get date <OLD CODE> ###
-		# .qzhwtbm6.knvmm38d are header [pagename, date&status]
-		# use JavaScript to perform mouseover event
-		#self.driver.execute_script(f"thiselem = document.querySelectorAll('.du4w35lb.k4urcfbm.l9j0dhe7.sjgh65i0')[{i}];")
-		#script = """dateelem = thiselem.querySelector('.qzhwtbm6.knvmm38d:nth-child(2)').querySelector('a');
-		#var mouseover = new MouseEvent("mouseover", {"view":window, "bubbles":true, "cancelable":true});
-		#dateelem.dispatchEvent(mouseover);"""
-		#self.driver.execute_script(script)
-		# mouseout
-		#script = """var mouseout = new MouseEvent("mouseout", {"view":window, "bubbles":true, "cancelable":true});
-		#dateelem.dispatchEvent(mouseout);"""
-		#self.driver.execute_script(script)
 
 		### ARTICLE & HASHTAGS ###
 		# raw HTML & bs4 object
@@ -368,7 +358,7 @@ class WindowLogin(Window):
 			if re.search(r'Shares?$', e.text):
 				share = e.text.rsplit(' ', 1)[0]
 			elif re.search(r'Comments?$', e.text):
-				comment = e.text.split(' ', 1)[0]
+				comment = e.text.rsplit(' ', 1)[0]
 
 		dic = {
 			'date': date,
