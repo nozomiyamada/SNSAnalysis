@@ -269,13 +269,21 @@ class WindowLogin(Window):
 	def scroll_to_element(self):
 		self.driver.execute_script('window.scrollTo(0, 400);') # scroll up into view	
 	
+	def scroll_to_bottom(self):
+		self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+		time.sleep(1)
+		
+		
 	def write(self, filename):
 		with open(filename, 'w', encoding='utf8') as f:
 			json.dump(self.scraped_posts, f, indent=2, ensure_ascii=False)
+			
 
-	def scrape(self, filename='FB.json', scroll=10, retry=5):
-		for _ in tqdm.tqdm(range(scroll)):
-			# get first element and scrol
+	def scrape(self, filename='FB.json', collect=10, scroll=3, retry=5):
+		for _ in range(scroll): # scroll 3 times first to get articles
+			self.scroll_to_bottom()
+		for _ in tqdm.tqdm(range(collect)): # collect 10 articles
+			# get first element and scroll
 			post_elem = self.get_first_element()
 			for i in range(retry): # try 5 times
 				try:
